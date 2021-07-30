@@ -55,7 +55,7 @@ nuclei -t ./android -u $PWD/ -c 500 -o $PWD/$1.nuclei_vulns.txt
 cat $PWD/$1.nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > $PWD/$1.crit-high.txt
 cat $PWD/$1.nuclei_vulns.txt | egrep "low]|medium]" |sort -k3 > $PWD/$1.low-med.txt
 cat $PWD/$1.nuclei_vulns.txt | grep "info]" | egrep -v "url_param|link_finder|relative_links" |sort -k3 > $PWD/$1.info.txt
-cat $PWD/$1.nuclei_vulns.txt | grep "credentials-disclosure]" > $PWD/$1.possible_creds.txt
+cat $PWD/$1.nuclei_vulns.txt | egrep "credentials-disclosure]|generic-tokens]|jdbc-connection-string]|jwt-token]|shoppable-token]" > $PWD/$1.possible_creds.txt
 
 cat $PWD/$1.nuclei_vulns.txt |grep url_params |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > $PWD/$1.params.txt
 cat $PWD/$1.nuclei_vulns.txt |grep link_finder |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > $PWD/$1.link_finder.txt
