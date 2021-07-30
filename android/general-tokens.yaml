@@ -8,7 +8,20 @@ info:
 
 file:
   - extensions:
-      - all
+      - action
+      - asp
+      - aspx
+      - html
+      - jar
+      - java
+      - js
+      - json
+      - jsp
+      - php
+      - properties
+      - smali
+      - txt
+      - xml
 
     matchers-condition: and
     matchers:
