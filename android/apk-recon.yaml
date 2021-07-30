@@ -1,0 +1,38 @@
+id: apk-recon
+
+info:
+  name: APK Recon
+  author: nullenc0de
+  severity: info
+  tags: android,file
+
+file:
+  - extensions:
+      - action
+      - asp
+      - aspx
+      - html
+      - jar
+      - java
+      - js
+      - json
+      - jsp
+      - php
+      - properties
+      - smali
+      - txt
+      - xml
+
+    extractors:
+      - type: regex
+        name: url_params
+        regex:
+          - '[&\?][a-zA-Z0-9\_]+='
+      - type: regex
+        name: link_finder
+        regex:
+          - https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)
+      - type: regex
+        name: relative_links
+        regex:
+          - (?:"|')(((?:/|\.\./|\./)[^"'><,;| *()(%%$^/\\\[\]][^"'><,;|()]{1,})|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-]{1,}\.(?:php|asp|aspx|jsp|json|action|html|js|txt|xml)(?:[\?|#][^"|']{0,}|)))(?:"|')
