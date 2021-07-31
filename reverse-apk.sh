@@ -51,7 +51,7 @@ echo -e "$OKRED Unpacking using APKTool..."
 echo -e "$OKRED=====================================================================$RESET"
 apktool d $PWD/$1 -o $PWD/$1-unpacked/ -f
 
-nuclei -t ./android -u $PWD/ -c 500 -o $PWD/$1.nuclei_vulns.txt
+nuclei -t /opt/reverse-apk/android -u $PWD/ -c 500 -o $PWD/$1.nuclei_vulns.txt
 cat $PWD/$1.nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > $PWD/$1.crit-high.txt
 cat $PWD/$1.nuclei_vulns.txt | egrep "low]|medium]" |sort -k3 > $PWD/$1.low-med.txt
 cat $PWD/$1.nuclei_vulns.txt | grep "info]" | egrep -v "url_param|link_finder|relative_links" |sort -k3 > $PWD/$1.info.txt
