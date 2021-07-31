@@ -2,11 +2,6 @@
 
 apt-get install unzip smali apktool dex2jar jadx
 
-need bbscope, anew, and nuclei in path
-
-git clone https://github.com/HamidrezaMoradi/APK-Downloader.git
-
-
 export GOPATH=/opt/bbscope
 go get -u github.com/sw33tLie/bbscope
 ln -s /opt/bbscope/bin/bbscope /usr/local/bin/bbscope
