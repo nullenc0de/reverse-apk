@@ -5,7 +5,7 @@ mv scope.txt ./output
 cd ./output
 cat scope.txt | while read apk ; do sleep 30s; python3 /opt/APK-Downloader/apk-downloader.py $apk ;done
 
-ls |grep apk |while read apk ; do bash ../reverse-apk-no-nuc.sh $apk > /dev/null; done
+ls |grep apk |while read apk ; do bash /opt/reverse-apk/reverse-apk-no-nuc.sh $apk > /dev/null; done
 
 nuclei -t /opt/reverse-apk/android -u ./ -c 500 -o ./nuclei_vulns.txt
 cat nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > crit-high.txt
