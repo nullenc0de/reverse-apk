@@ -3,7 +3,7 @@ bbscope h1 -u nullenc0de -t <token> -b |egrep '\.android' |cut -d = -f2 |anew sc
 
 cat scope.txt | while read apk ; do sleep 8m; python3 /opt/APK-Downloader/apk-downloader.py $apk ;done
 
-ls |grep "\.apk" |while read apk ; do bash reverse-apk.sh $apk > /dev/null; done
+ls |while read apk ; do bash reverse-apk.sh $apk > /dev/null; done
 
 nuclei -t ./android -u ./ -c 500 -o ./nuclei_vulns.txt
 cat nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > crit-high.txt
