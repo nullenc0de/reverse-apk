@@ -1,11 +1,13 @@
+mkdir ./output
 bbscope bc -b |egrep 'play.google.com|android.com' |cut -d = -f2 |grep com. |cut -d '&' -f1 | cut -d ')' -f1 >scope.txt
 bbscope h1 -u nullenc0de -t <token> -b |egrep '\.android' |cut -d = -f2 |anew scope.txt
-
+mv scope.txt ./output
+cd ./output
 cat scope.txt | while read apk ; do sleep 30s; python3 /opt/APK-Downloader/apk-downloader.py $apk ;done
 
-ls |while read apk ; do bash reverse-apk-no-nuc.sh $apk > /dev/null; done
+ls |grep apk |while read apk ; do bash reverse-apk-no-nuc.sh $apk > /dev/null; done
 
-nuclei -t ./android -u ./ -c 500 -o ./nuclei_vulns.txt
+nuclei -t ../android -u ./ -c 500 -o ./nuclei_vulns.txt
 cat nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > crit-high.txt
 cat nuclei_vulns.txt | egrep "low]|medium]" |sort -k3 > low-med.txt
 cat nuclei_vulns.txt | grep "info]" | egrep -v "url_param|link_finder|relative_links" |sort -k3 > info.txt
