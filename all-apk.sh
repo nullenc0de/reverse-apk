@@ -7,7 +7,7 @@ cat scope.txt | while read apk ; do sleep 30s; python3 /opt/APK-Downloader/apk-d
 
 ls |grep apk |while read apk ; do bash reverse-apk-no-nuc.sh $apk > /dev/null; done
 
-nuclei -t ../android -u ./ -c 500 -o ./nuclei_vulns.txt
+nuclei -t /opt/reverse-apk/android -u ./ -c 500 -o ./nuclei_vulns.txt
 cat nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > crit-high.txt
 cat nuclei_vulns.txt | egrep "low]|medium]" |sort -k3 > low-med.txt
 cat nuclei_vulns.txt | grep "info]" | egrep -v "url_param|link_finder|relative_links" |sort -k3 > info.txt
