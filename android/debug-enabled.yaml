@@ -8,7 +8,18 @@ info:
 
 file:
   - extensions:
-      - all
+      - action
+      - asp
+      - aspx
+      - html
+      - jar
+      - java
+      - js
+      - json
+      - jsp
+      - php
+      - properties
+      - smali
 
     matchers:
       - type: regex
