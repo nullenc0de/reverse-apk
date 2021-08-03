@@ -3,7 +3,7 @@
 # + -- --=[https://xerosecurity.com
 #
 # ABOUT:
-# Quickly analyze and reverse engineer Android applications. SHAMELESSLY STOLEN FROM XER0DAYZ.
+# Quickly analyze and reverse engineer Android applications. SHAMELESSLY STOLEN PARTS FROM XER0DAYZ.
 # apt-get install unzip smali apktool dex2jar jadx
 #
 # INSTALL:
@@ -34,32 +34,46 @@ echo -e "                                        \____|__  /____|   |____|__ \\"
 echo -e "                                                \/                 \/"
 echo -e "$RESET"
 
+mkdir ./output
+mkdir ./apk_file
+
+cd ./apk_file
+python3 /opt/APK-Downloader/apk-downloader.py $1 2> /dev/null
+mv $1* $1
+
+cd ..
+
 echo -e "$OKRED Unpacking APK file..."
 echo -e "$OKRED=====================================================================$RESET"
-unzip $PWD/$1 -d $PWD/$1-unzipped/
-baksmali d $PWD/$1-unzipped/classes.dex -o $PWD/$1-unzipped/classes.dex.out/ 2> /dev/null
+unzip ./apk_file/$1 -d ./output/$1-unzipped/
+baksmali d ./apk_file/$1-unzipped/classes.dex -o ./output/$1-unzipped/classes.dex.out/ 2> /dev/null
 
 echo -e "$OKRED Converting APK to Java JAR file..."
 echo -e "$OKRED=====================================================================$RESET"
-d2j-dex2jar $PWD/$1 -o $PWD/$1.jar --force
+d2j-dex2jar ./apk_file/$1 -o ./output/$1.jar --force
 
 echo -e "$OKRED Decompiling using Jadx..."
 echo -e "$OKRED=====================================================================$RESET"
-jadx $PWD/$1 -j $(grep -c ^processor /proc/cpuinfo) -d $PWD/$1-jadx/ > /dev/null
+jadx ./apk_file/$1 -j $(grep -c ^processor /proc/cpuinfo) -d ./output/$1-jadx/ > /dev/null
 
 echo -e "$OKRED Unpacking using APKTool..."
 echo -e "$OKRED=====================================================================$RESET"
-apktool d $PWD/$1 -o $PWD/$1-unpacked/ -f
+apktool d ./apk_file/$1 -o ./output/$1-unpacked/ -f
 
-nuclei -t /opt/reverse-apk/android -u $PWD/ -c 500 -o $PWD/$1.nuclei_vulns.txt
-cat $PWD/$1.nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > $PWD/$1.crit-high.txt
-cat $PWD/$1.nuclei_vulns.txt | egrep "low]|medium]" |sort -k3 > $PWD/$1.low-med.txt
-cat $PWD/$1.nuclei_vulns.txt | grep "info]" | egrep -v "url_param|link_finder|relative_links" |sort -k3 > $PWD/$1.info.txt
-cat $PWD/$1.nuclei_vulns.txt | egrep "credentials-disclosure]|generic-tokens]|jdbc-connection-string]|jwt-token]|shoppable-token]|aws-access-key]" > $PWD/$1.possible_creds.txt
+mkdir ./output/$1
 
-cat $PWD/$1.nuclei_vulns.txt |grep url_params |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > $PWD/$1.params.txt
-cat $PWD/$1.nuclei_vulns.txt |grep link_finder |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > $PWD/$1.link_finder.txt
-cat $PWD/$1.nuclei_vulns.txt |grep relative_links |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > $PWD/$1.relative_link.txt
+mv ./output/$1.jar ./output/$1
+mv ./output/$1-* ./output/$1
 
-slackcat --channel bugbounty $PWD/$1.crit-high.txt
-slackcat --channel bugbounty $PWD/$1.possible_creds.txt
+nuclei -t /opt/reverse-apk/android -u ./output/$1 -c 500 -o ./output/$1/$1.nuclei_vulns.txt
+cat ./output/$1/$1.nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > ./output/$1/$1.crit-high.txt
+cat ./output/$1/$1.nuclei_vulns.txt | egrep "low]|medium]" |sort -k3 > ./output/$1/$1.low-med.txt
+cat ./output/$1/$1.nuclei_vulns.txt | grep "info]" | egrep -v "url_param|link_finder|relative_links" |sort -k3 > ./output/$1/$1.info.txt
+cat ./output/$1/$1.nuclei_vulns.txt | egrep "credentials-disclosure]|generic-tokens]|jdbc-connection-string]|jwt-token]|shoppable-token]|aws-access-key]" > ./output/$1/$1.possible_creds.txt
+
+cat ./output/$1/$1.nuclei_vulns.txt |grep url_params |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > ./output/$1/$1.params.txt
+cat ./output/$1/$1.nuclei_vulns.txt |grep link_finder |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > ./output/$1/$1.link_finder.txt
+cat ./output/$1/$1.nuclei_vulns.txt |grep relative_links |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > ./output/$1/$1.relative_link.txt
+
+slackcat --channel bugbounty ./output/$1/$1.crit-high.txt
+slackcat --channel bugbounty ./output/$1/$1.possible_creds.txt
