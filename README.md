@@ -1,5 +1,5 @@
 # reverse-apk
-
+```
 apt-get install unzip smali apktool dex2jar jadx
 
 export GOPATH=/opt/bbscope
@@ -18,3 +18,4 @@ git clone https://github.com/HamidrezaMoradi/APK-Downloader.git || git -C /opt/A
 cd APK-Downloader
 pip3 install -r requirements.txt
 cd ..
+```
