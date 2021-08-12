@@ -38,7 +38,7 @@ mkdir ./output
 mkdir ./apk_file
 
 cd ./apk_file
-python3 /opt/apkizer/apkizer.py $1 2> /dev/null
+python3 /opt/apkizer/apkizer.py -p $1 2> /dev/null
 ls ./$1/* -tr |head -1 |xargs -I '{}' mv '{}' $1
 
 cd ..
