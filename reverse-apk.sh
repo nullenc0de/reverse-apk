@@ -39,7 +39,7 @@ mkdir ./apk_file
 
 cd ./apk_file
 python3 /opt/apkizer/apkizer.py -p $1 2> /dev/null
-mv ./$1"$(ls ./$1 -tr |head -1)" $1
+mv ./$1/"$(ls ./$1 -tr |head -1)" $1
 
 cd ..
 
