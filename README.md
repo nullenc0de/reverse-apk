@@ -14,8 +14,8 @@ export GOPATH=/opt/nuclei
 go get -u -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei
 ln -s /opt/nuclei/bin/nuclei /usr/local/bin/nuclei
 
-git clone https://github.com/HamidrezaMoradi/APK-Downloader.git || git -C /opt/APK-Downloader pull
-cd APK-Downloader
+git clone https://github.com/ko2sec/apkizer.git || git -C /opt/ko2sec pull
+cd ko2sec
 pip3 install -r requirements.txt
 cd ..
 ```
