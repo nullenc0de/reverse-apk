@@ -71,7 +71,7 @@ nuclei -t /opt/reverse-apk/android -u ./output/$1 -c 500 -o ./output/$1/$1.nucle
 cat ./output/$1/$1.nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > ./output/$1/$1.crit-high.txt
 cat ./output/$1/$1.nuclei_vulns.txt | egrep "low]|medium]" |sort -k3 > ./output/$1/$1.low-med.txt
 cat ./output/$1/$1.nuclei_vulns.txt | grep "info]" | egrep -v "url_param|link_finder|relative_links" |sort -k3 > ./output/$1/$1.info.txt
-cat ./output/$1/$1.nuclei_vulns.txt | egrep "credentials-disclosure]|generic-tokens]|jdbc-connection-string]|jwt-token]|shoppable-token]|aws-access-key]" > ./output/$1/$1.possible_creds.txt
+cat ./output/$1/$1.nuclei_vulns.txt | egrep "credentials-disclosure]|generic-tokens]|jdbc-connection-string]|jwt-token]|shoppable-token]|aws-access-key]" |grep -v 'Ljava/lang/String' > ./output/$1/$1.possible_creds.txt
 
 cat ./output/$1/$1.nuclei_vulns.txt |grep url_params |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > ./output/$1/$1.params.txt
 cat ./output/$1/$1.nuclei_vulns.txt |grep link_finder |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > ./output/$1/$1.link_finder.txt
