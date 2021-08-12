@@ -36,10 +36,12 @@ echo -e "$RESET"
 
 mkdir ./output
 mkdir ./apk_file
+mkdir ./apk_files
 
-cd ./apk_file
+cd ./apk_files
 python3 /opt/apkizer/apkizer.py -p $1 2> /dev/null
-mv ./$1/"$(ls ./$1 -tr |head -1)" $1
+mv ./$1/"$(ls ./$1 -tr |head -1)" ../$1
+mv ../$1 ../apk_file
 
 cd ..
 
