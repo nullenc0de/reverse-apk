@@ -38,8 +38,8 @@ mkdir ./output
 mkdir ./apk_file
 
 cd ./apk_file
-python3 /opt/APK-Downloader/apk-downloader.py $1 2> /dev/null
-mv $1* $1
+python3 /opt/apkizer/apkizer.py $1 2> /dev/null
+ls ./$1/* -tr |head -1 |xargs -I '{}' mv '{}' $1
 
 cd ..
 
