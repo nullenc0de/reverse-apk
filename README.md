@@ -1,21 +1,29 @@
 # reverse-apk
+
+Add the Kali Linux repository:
+
+Open the /etc/apt/sources.list file using a text editor with root privileges (e.g., sudo nano /etc/apt/sources.list).
+Add the following line at the end of the file:
 ```
-apt-get install unzip smali apktool dex2jar jadx
+deb http://http.kali.org/kali kali-rolling main non-free contrib
+````
+Save the file and exit the text editor.
 
-export GOPATH=/opt/bbscope
-go get -u github.com/sw33tLie/bbscope
-ln -s /opt/bbscope/bin/bbscope /usr/local/bin/bbscope
+Import the Kali Linux repository GPG key:
 
-export GOPATH=/opt/anew
-go get -u github.com/tomnomnom/anew
-ln -s /opt/anew/bin/anew /usr/local/bin/anew
+Download and import the Kali Linux repository key by running the following command:
+```
+wget -q -O - https://archive.kali.org/archive-key.asc | sudo apt-key add -
+```
+Update the package lists:
 
-export GOPATH=/opt/nuclei
-go get -u -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei
-ln -s /opt/nuclei/bin/nuclei /usr/local/bin/nuclei
+Run the following command to update the package lists with the newly added Kali repository:
+```
+sudo apt-get update
+```
+Install the desired packages:
 
-git clone https://github.com/ko2sec/apkizer.git || git -C /opt/apkizer pull
-cd apkizer
-pip3 install -r requirements.txt
-cd ..
+Run the following command to install the packages you mentioned:
+```
+sudo apt-get install -y unzip smali apktool dex2jar jadx
 ```
