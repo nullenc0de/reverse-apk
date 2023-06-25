@@ -1,75 +1,61 @@
 #!/bin/bash
-# + -- --=[ReverseAPK v1.2 by @xer0dayz
-# + -- --=[https://xerosecurity.com
-#
-# ABOUT:
-# Quickly analyze and reverse engineer Android applications. SHAMELESSLY STOLEN PARTS FROM XER0DAYZ.
-# apt-get install unzip smali apktool dex2jar jadx
-#
-# INSTALL:
-# ./install
-#
-# USAGE:
-# reverseapk <appname.apk>
-#
 
-OKBLUE='\033[94m'
-OKRED='\033[91m'
-OKGREEN='\033[92m'
-OKORANGE='\033[93m'
-RESET='\e[0m'
+# Check if the required tools are installed
+command -v unzip >/dev/null 2>&1 || { echo >&2 "unzip is required but not installed. Aborting."; exit 1; }
+command -v java >/dev/null 2>&1 || { echo >&2 "java is required but not installed. Aborting."; exit 1; }
+command -v apktool >/dev/null 2>&1 || { echo >&2 "apktool is required but not installed. Aborting."; exit 1; }
+command -v d2j-dex2jar >/dev/null 2>&1 || { echo >&2 "d2j-dex2jar is required but not installed. Aborting."; exit 1; }
+command -v jadx >/dev/null 2>&1 || { echo >&2 "jadx is required but not installed. Aborting."; exit 1; }
+command -v baksmali >/dev/null 2>&1 || { echo >&2 "baksmali is required but not installed. Aborting."; exit 1; }
+command -v nuclei >/dev/null 2>&1 || { echo >&2 "nuclei is required but not installed. Aborting."; exit 1; }
+command -v slackcat >/dev/null 2>&1 || { echo >&2 "slackcat is required but not installed. Aborting."; exit 1; }
 
-echo -e "$OKORANGE                                            "
-echo -e "__________                                        "
-echo -e "\______   \ _______  __ ___________  ______ ____  "
-echo -e " |       _// __ \  \/ // __ \_  __ \/  ___// __ \ "
-echo -e " |    |   \  ___/\   /\  ___/|  | \/\___ \\  ___/ "
-echo -e " |____|_  /\___  >\_/  \___  >__|  /____  >\___  >"
-echo -e "        \/     \/          \/           \/     \/ "
-echo -e "                                           _____ __________ ____  __."
-echo -e "                                          /  _  \\\\______   \    |/ _|"
-echo -e "      --=[( by @xer0dayz )]=--           /  /_\  \|     ___/      <  "
-echo -e "   --=[( https://xerosecurity.com )]=-- /    |    \    |   |    |  \ "
-echo -e "                                        \____|__  /____|   |____|__ \\"
-echo -e "                                                \/                 \/"
-echo -e "$RESET"
+# Prompt for the APK file path
+read -p "Enter the path to the APK file: " apk_path
 
-mkdir ./output
-mkdir ./apk_file
+# Create a temporary directory for the decompiled files
+temp_dir=$(mktemp -d)
 
-mv $1 ./apk_file
+# Unzip the APK file
+unzip "$apk_path" -d "$temp_dir"
 
-echo -e "$OKRED Unpacking APK file..."
-echo -e "$OKRED=====================================================================$RESET"
-unzip ./apk_file/$1 -d ./output/$1-unzipped/
-baksmali d ./apk_file/$1-unzipped/classes.dex -o ./output/$1-unzipped/classes.dex.out/ 2> /dev/null
+# Use apktool to decompile the APK
+apktool d "$apk_path" -o "$temp_dir/decompiled" -f
 
-echo -e "$OKRED Converting APK to Java JAR file..."
-echo -e "$OKRED=====================================================================$RESET"
-d2j-dex2jar ./apk_file/$1 -o ./output/$1.jar --force
+# Use d2j-dex2jar to convert the APK to JAR format
+d2j-dex2jar "$apk_path" -o "$temp_dir/decompiled.jar"
 
-echo -e "$OKRED Decompiling using Jadx..."
-echo -e "$OKRED=====================================================================$RESET"
-jadx ./apk_file/$1 -j $(grep -c ^processor /proc/cpuinfo) -d ./output/$1-jadx/ > /dev/null
+# Use jadx to decompile the JAR file
+jadx "$temp_dir/decompiled.jar" -j "$(grep -c ^processor /proc/cpuinfo)" -d "$temp_dir/jadx-decompiled"
 
-echo -e "$OKRED Unpacking using APKTool..."
-echo -e "$OKRED=====================================================================$RESET"
-apktool d ./apk_file/$1 -o ./output/$1-unpacked/ -f
+# Use baksmali to decompile the dex files
+baksmali d "$apk_path" -o "$temp_dir/baksmali-decompiled"
 
-mkdir ./output/$1
+# Create a folder for the decompiled files
+output_dir="$temp_dir/scan_files"
+mkdir "$output_dir"
 
-mv ./output/$1.jar ./output/$1
-mv ./output/$1-* ./output/$1
+# Move the decompiled and jadx-decompiled files to the output folder
+mv "$temp_dir/decompiled" "$output_dir"
+mv "$temp_dir/jadx-decompiled" "$output_dir"
+mv "$temp_dir/baksmali-decompiled" "$output_dir"
 
-nuclei -t /opt/reverse-apk/android -u ./output/$1 -c 500 -o ./output/$1/$1.nuclei_vulns.txt
-cat ./output/$1/$1.nuclei_vulns.txt |egrep "critical]|high]" |sort -k3 > ./output/$1/$1.crit-high.txt
-cat ./output/$1/$1.nuclei_vulns.txt | egrep "low]|medium]" |sort -k3 > ./output/$1/$1.low-med.txt
-cat ./output/$1/$1.nuclei_vulns.txt | grep "info]" | egrep -v "url_param|link_finder|relative_links" |sort -k3 > ./output/$1/$1.info.txt
-cat ./output/$1/$1.nuclei_vulns.txt | egrep "credentials-disclosure]|generic-tokens]|jdbc-connection-string]|jwt-token]|shoppable-token]|aws-access-key]" |grep -v 'Ljava/lang/String' > ./output/$1/$1.possible_creds.txt
+# Run nuclei scan on the decompiled files and store the output
+nuclei -t /opt/reverse-apk/android -u "$output_dir" -c 500 -o "$output_dir/nuclei_vulns.txt"
 
-cat ./output/$1/$1.nuclei_vulns.txt |grep url_params |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > ./output/$1/$1.params.txt
-cat ./output/$1/$1.nuclei_vulns.txt |grep link_finder |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > ./output/$1/$1.link_finder.txt
-cat ./output/$1/$1.nuclei_vulns.txt |grep relative_links |cut -d ' ' -f 7 |tr , '\n' | tr ] '\n' | tr [ '\n' |tr -d '"' |tr -d "'" |sort -u > ./output/$1/$1.relative_link.txt
+# Process the nuclei output for different categories
+filename=$(basename "$apk_path" .apk)
+cat "$output_dir/nuclei_vulns.txt" | egrep "critical]|high]" | sort -k3 > "$output_dir/$filename.crit-high.txt"
+cat "$output_dir/nuclei_vulns.txt" | egrep "low]|medium]" | sort -k3 > "$output_dir/$filename.low-med.txt"
+cat "$output_dir/nuclei_vulns.txt" | grep "info]" | egrep -v "url_param|link_finder|relative_links" | sort -k3 > "$output_dir/$filename.info.txt"
+cat "$output_dir/nuclei_vulns.txt" | egrep "credentials-disclosure]|generic-tokens]|jdbc-connection-string]|jwt-token]|shoppable-token]|aws-access-key]" | grep -v 'Ljava/lang/String' > "$output_dir/$filename.possible_creds.txt"
+cat "$output_dir/nuclei_vulns.txt" | grep url_params | cut -d ' ' -f 7 | tr , '\n' | tr ] '\n' | tr [ '\n' | tr -d '"' | tr -d "'" | sort -u > "$output_dir/$filename.params.txt"
+cat "$output_dir/nuclei_vulns.txt" | grep link_finder | cut -d ' ' -f 7 | tr , '\n' | tr ] '\n' | tr [ '\n' | tr -d '"' | tr -d "'" | sort -u > "$output_dir/$filename.link_finder.txt"
+cat "$output_dir/nuclei_vulns.txt" | grep relative_links | cut -d ' ' -f 7 | tr , '\n' | tr ] '\n' | tr [ '\n' | tr -d '"' | tr -d "'" | sort -u > "$output_dir/$filename.relative_link.txt"
 
-slackcat --channel bugbounty ./output/$1/$1.crit-high.txt
-slackcat --channel bugbounty ./output/$1/$1.possible_creds.txt
+# Send the critical/high vulnerabilities and possible credentials to Slack
+slackcat --channel bugbounty "$output_dir/$filename.crit-high.txt"
+slackcat --channel bugbounty "$output_dir/$filename.possible_creds.txt"
+
+# Clean up temporary files
+rm -rf "$temp_dir"
