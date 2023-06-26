@@ -58,4 +58,4 @@ slackcat --channel bugbounty "$output_dir/$filename.crit-high.txt"
 slackcat --channel bugbounty "$output_dir/$filename.possible_creds.txt"
 
 # Clean up temporary files
-#echo "raw files are in "$temp_dir""
+echo "raw files are in "$temp_dir""
