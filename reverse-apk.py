@@ -29,59 +29,70 @@ def extract_apk(apk_path: str) -> str:
 def decompile_apk(apk_path: str, output_dir: str) -> None:
     """Decompile APK using various tools"""
     logger.info("Decompiling APK...")
-    subprocess.run(['apktool', 'd', apk_path, '-o', f"{output_dir}/apktool"], check=True)
-    subprocess.run(['d2j-dex2jar', apk_path, '-o', f"{output_dir}/decompiled.jar"], check=True)
-    subprocess.run(['jadx', f"{output_dir}/decompiled.jar", '-d', f"{output_dir}/jadx"], check=True)
+    try:
+        subprocess.run(['apktool', 'd', apk_path, '-o', f"{output_dir}/apktool"], check=True)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"apktool failed: {e}")
+    
+    try:
+        subprocess.run(['d2j-dex2jar', apk_path, '-o', f"{output_dir}/decompiled.jar"], check=True)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"dex2jar failed: {e}")
+    
+    try:
+        subprocess.run(['jadx', f"{output_dir}/decompiled.jar", '-d', f"{output_dir}/jadx"], check=True)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"jadx failed: {e}")
 
-def run_nuclei_scan(output_dir: str) -> str:
-    """Run nuclei scan on specific directories of the decompiled files"""
-    logger.info("Running nuclei scan...")
-    nuclei_output = f"{output_dir}/nuclei_vulns.txt"
+def run_nuclei_scan(output_dir: str, target_dir: str, timeout_minutes: int) -> str:
+    """Run nuclei scan on a specific directory with optimizations and error handling"""
+    logger.info(f"Running optimized nuclei scan on {target_dir}...")
+    nuclei_output = f"{output_dir}/nuclei_vulns_{os.path.basename(target_dir)}.txt"
 
-    scan_dirs = [
-        f"{output_dir}/apktool",
-        f"{output_dir}/jadx/sources",
-    ]
-
-    # Filter directories that exist and convert to absolute paths
-    valid_dirs = [os.path.abspath(dir) for dir in scan_dirs if os.path.exists(dir)]
-
-    if valid_dirs:
+    if os.path.exists(target_dir):
         try:
-            logger.info(f"Scanning directories: {', '.join(valid_dirs)}")
+            command = [
+                'nuclei',
+                '-o', nuclei_output,
+                '-silent',
+                '-c', '50',  # Use 50 concurrent workers
+                '-rl', '150',  # Rate limit to 150 requests per second
+                '-target', target_dir,
+                '-t', 'file/android,file/keys',  # Corrected template names
+                '-etags', 'info',  # Exclude info severity to focus on more critical issues
+                '-timeout', '5',  # Set a 5-second timeout for each template
+                '-bulk-size', '25',  # Process 25 targets at a time
+                '-project'  # Use project folder for recursive scanning
+            ]
 
-            # Build the nuclei command with multiple -target arguments
-            command = ['nuclei', '-o', nuclei_output, '-v']
-            for dir in valid_dirs:
-                command.extend(['-target', dir])
-            command.extend(['-t', 'file/android,file/keys'])
-
-            # Run nuclei
-            result = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
-                check=True
-            )
-
-            # Log the command output
-            logger.info(f"Nuclei stdout: {result.stdout}")
-            logger.info(f"Nuclei stderr: {result.stderr}")
+            # Run nuclei with a timeout
+            try:
+                result = subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    timeout=timeout_minutes * 60  # Convert minutes to seconds
+                )
+                logger.info(f"Nuclei stdout: {result.stdout}")
+                logger.info(f"Nuclei stderr: {result.stderr}")
+            except subprocess.TimeoutExpired:
+                logger.warning(f"Nuclei scan for {target_dir} timed out after {timeout_minutes} minutes. Proceeding with partial results.")
 
             if os.path.exists(nuclei_output) and os.path.getsize(nuclei_output) > 0:
-                logger.info(f"Nuclei scan completed. Results saved to {nuclei_output}")
+                logger.info(f"Nuclei scan completed for {target_dir}. Results saved to {nuclei_output}")
                 return nuclei_output
             else:
-                logger.info("Nuclei scan completed but no vulnerabilities were found.")
+                logger.info(f"Nuclei scan completed for {target_dir} but no vulnerabilities were found.")
                 return ""
         except subprocess.CalledProcessError as e:
-            logger.error(f"Nuclei scan failed with return code {e.returncode}")
+            logger.error(f"Nuclei scan failed for {target_dir} with return code {e.returncode}")
             logger.error(f"Nuclei stdout: {e.stdout}")
             logger.error(f"Nuclei stderr: {e.stderr}")
-            return ""
     else:
-        logger.warning("No valid directories found for nuclei scan")
-        return ""
+        logger.warning(f"Directory {target_dir} not found for nuclei scan")
+    
+    return ""
 
 def process_manifest(tree: ET.ElementTree) -> None:
     """Process the Android manifest and extract security-relevant information"""
@@ -141,7 +152,7 @@ def extract_urls_and_endpoints(decompiled_dir: str) -> Tuple[Set[str], Set[str],
 
     return urls, js_urls, api_endpoints
 
-def analyze_apk(apk_path: str) -> Dict[str, Any]:
+def analyze_apk(apk_path: str, timeout_minutes: int) -> Dict[str, Any]:
     """Analyze an APK file and return the results"""
     temp_dir = extract_apk(apk_path)
     output_dir = os.path.join(temp_dir, "analysis")
@@ -149,15 +160,22 @@ def analyze_apk(apk_path: str) -> Dict[str, Any]:
 
     try:
         decompile_apk(apk_path, output_dir)
-        nuclei_output = run_nuclei_scan(output_dir)
+        
+        # Run separate nuclei scans
+        nuclei_outputs = []
+        for scan_dir in ['apktool', 'jadx/sources']:
+            target_dir = os.path.join(output_dir, scan_dir)
+            nuclei_output = run_nuclei_scan(output_dir, target_dir, timeout_minutes)
+            if nuclei_output:
+                nuclei_outputs.append(nuclei_output)
 
         manifest_path = os.path.join(output_dir, "apktool", "AndroidManifest.xml")
         if os.path.isfile(manifest_path):
             tree = ET.parse(manifest_path)
             process_manifest(tree)
 
-        if nuclei_output:
-            analysis["nuclei_results"] = nuclei_output
+        if nuclei_outputs:
+            analysis["nuclei_results"] = nuclei_outputs
 
         urls, js_urls, api_endpoints = extract_urls_and_endpoints(output_dir)
         analysis["urls"] = list(urls)
@@ -204,18 +222,24 @@ def generate_report(analysis: Dict[str, Any]) -> str:
         report += f"  - {endpoint}\n"
     report += "\n"
 
-    if "nuclei_results" in analysis and analysis["nuclei_results"]:
+    if "nuclei_results" in analysis:
         report += "Nuclei Scan Results:\n"
-        with open(analysis['nuclei_results'], 'r') as f:
-            report += f.read()
+        for result_file in analysis["nuclei_results"]:
+            report += f"Results from {os.path.basename(result_file)}:\n"
+            try:
+                with open(result_file, 'r') as f:
+                    report += f.read()
+            except FileNotFoundError:
+                report += f"Error: The file {result_file} was not found. The scan may have failed or produced no results.\n"
+            report += "\n"
     else:
         report += "No vulnerabilities were found by the Nuclei scan.\n"
 
     return report
 
-def main(apk_path: str) -> None:
+def main(apk_path: str, timeout_minutes: int) -> None:
     """Drive the whole program"""
-    results = analyze_apk(apk_path)
+    results = analyze_apk(apk_path, timeout_minutes)
     report = generate_report(results)
 
     report_filename = f"{results.get('package', 'unknown')}_report.txt"
@@ -231,6 +255,7 @@ def main(apk_path: str) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="APK Analyzer")
     parser.add_argument("-a", "--apk", help="path to the APK file", required=True)
+    parser.add_argument("-t", "--timeout", help="timeout for nuclei scan in minutes", type=int, default=60)
     args = parser.parse_args()
 
-    main(args.apk)
+    main(args.apk, args.timeout)
