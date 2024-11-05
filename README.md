@@ -25,7 +25,7 @@ The APK Analyzer is a Python tool designed to perform security analysis on Andro
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/apk-analyzer.git
+   git clone https://github.com/nullenc0de/apk-analyzer.git
    ```
 
 2. Navigate to the project directory:
