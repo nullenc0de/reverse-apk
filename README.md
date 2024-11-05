@@ -30,7 +30,7 @@ The APK Analyzer is a Python tool designed to perform security analysis on Andro
 
 2. Navigate to the project directory:
    ```
-   cd apk-analyzer
+   cd reverse-apk/
    ```
 
 3. Install the required Python packages:
